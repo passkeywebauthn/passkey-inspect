@@ -1,0 +1,19 @@
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+*.tgz
+.idea/
+.vscode/
+coverage/
+
+# Agent and assistant artifacts — never commit
+AGENTS.md
+AGENTS/
+CLAUDE.md
+CLAUDE/
+.claude/
+.cursor/
+.aider*
+.windsurfrules

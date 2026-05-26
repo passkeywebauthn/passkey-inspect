@@ -1,0 +1,49 @@
+{
+  "name": "passkey-inspect",
+  "version": "0.1.0",
+  "description": "Zero-dependency CLI and library to decode and pretty-print WebAuthn / passkey payloads (attestationObject, authenticatorData, clientDataJSON, COSE keys).",
+  "keywords": [
+    "webauthn",
+    "passkey",
+    "passkeys",
+    "fido2",
+    "fido",
+    "cbor",
+    "cose",
+    "attestation",
+    "authenticator",
+    "cli",
+    "debug",
+    "inspect"
+  ],
+  "homepage": "https://www.passkeywebauthn.com",
+  "bugs": {
+    "url": "https://github.com/passkeywebauthn/passkey-inspect/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/passkeywebauthn/passkey-inspect.git"
+  },
+  "license": "MIT",
+  "author": "passkeywebauthn",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "main": "./src/index.js",
+  "bin": {
+    "passkey-inspect": "./bin/passkey-inspect.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test \"test/*.test.js\""
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
