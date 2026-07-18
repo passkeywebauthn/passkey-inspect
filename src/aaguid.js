@@ -4,6 +4,7 @@
 // AAGUID, typical for self-attestation or anonymized platform passkeys).
 
 import { bytesToHex } from './base64url.js';
+import { lookupAaguid } from './aaguid-names.js';
 
 export function formatAaguid(bytes) {
   if (!(bytes instanceof Uint8Array) || bytes.length !== 16) {
@@ -15,6 +16,8 @@ export function formatAaguid(bytes) {
   return {
     uuid,
     isZero,
+    // Human-readable model name when the AAGUID is a known authenticator.
+    name: isZero ? undefined : lookupAaguid(uuid) ?? undefined,
     note: isZero
       ? 'all-zero AAGUID — authenticator did not identify its model (common for self-attestation, anonymized platform passkeys, or "none" attestation)'
       : undefined,

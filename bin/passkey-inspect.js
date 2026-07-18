@@ -9,6 +9,8 @@ import {
   parseAuthData,
   parseAttestationObject,
   parseClientDataJSON,
+  parseCredential,
+  isCredentialJSON,
   autoDecode,
   b64uToBytes,
   b64ToBytes,
@@ -215,6 +217,17 @@ function loadInput(opts) {
 
 function runParser(type, bytes, encoding) {
   if (type === 'auto') {
+    // A full serialized credential (navigator.credentials response) pasted as JSON.
+    if (bytes[0] === 0x7b) {
+      try {
+        const obj = JSON.parse(new TextDecoder().decode(bytes));
+        if (isCredentialJSON(obj)) {
+          return { type: 'credential', parsed: parseCredential(obj), inputEncoding: encoding, byteLength: bytes.length };
+        }
+      } catch {
+        /* not a credential; fall through to blob detection */
+      }
+    }
     const r = detectAndParse(bytes);
     return { ...r, inputEncoding: encoding, byteLength: bytes.length };
   }

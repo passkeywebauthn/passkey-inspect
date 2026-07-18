@@ -80,7 +80,10 @@ function formatAuthData(a, useColor, indent = '  ') {
     const acd = a.attestedCredentialData;
     out += indent + paint(ANSI.dim, useColor) + 'attestedCredentialData:' + paint(ANSI.reset, useColor) + '\n';
     const inner = indent + '  ';
-    out += kv('aaguid', acd.aaguid.uuid, useColor, inner);
+    const aaguidValue = acd.aaguid.name
+      ? `${acd.aaguid.uuid} ${paint(ANSI.cyan, useColor)}(${acd.aaguid.name})${paint(ANSI.reset, useColor)}`
+      : acd.aaguid.uuid;
+    out += kv('aaguid', aaguidValue, useColor, inner);
     if (acd.aaguid.note) {
       out += inner + '  ' + paint(ANSI.gray, useColor) + acd.aaguid.note + paint(ANSI.reset, useColor) + '\n';
     }
@@ -162,6 +165,22 @@ export function formatResult(result, opts = {}) {
     }
   } else if (result.type === 'authenticatorData') {
     lines.push(formatAuthData(result.parsed, useColor));
+  } else if (result.type === 'credential') {
+    const c = result.parsed;
+    lines.push(kv('ceremony', c.ceremony, useColor));
+    if (c.id) lines.push(kv('id', c.id, useColor));
+    if (c.credentialType) lines.push(kv('type', c.credentialType, useColor));
+    if (c.authenticatorAttachment) lines.push(kv('authenticatorAttachment', c.authenticatorAttachment, useColor));
+    lines.push('\n');
+    for (const part of c.parts) {
+      lines.push(formatResult(
+        { type: part.type, parsed: part.parsed, inputEncoding: part.inputEncoding ?? 'base64url', byteLength: part.byteLength },
+        opts,
+      ));
+      lines.push('\n');
+    }
+    if (c.signature) lines.push(kv('signature', `bytes(${c.signature.length}) ${truncateHex(c.signature.hex)}`, useColor));
+    if (c.userHandle) lines.push(kv('userHandle', `bytes(${c.userHandle.length}) ${c.userHandle.base64url}`, useColor));
   } else {
     lines.push(JSON.stringify(result.parsed, jsonReplacer, 2) + '\n');
   }

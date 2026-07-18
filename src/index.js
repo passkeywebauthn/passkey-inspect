@@ -6,6 +6,8 @@ import { parseAuthData, parseFlags } from './authData.js';
 import { parseAttestationObject } from './attestation.js';
 import { parseClientDataJSON } from './clientData.js';
 import { parseCoseKey } from './cose.js';
+import { parseCredential, isCredentialJSON } from './credential.js';
+import { lookupAaguid, AAGUID_NAMES } from './aaguid-names.js';
 import { autoDecode, b64uToBytes, b64ToBytes, hexToBytes, bytesToHex, bytesToB64u } from './base64url.js';
 
 export {
@@ -14,6 +16,10 @@ export {
   parseAttestationObject,
   parseClientDataJSON,
   parseCoseKey,
+  parseCredential,
+  isCredentialJSON,
+  lookupAaguid,
+  AAGUID_NAMES,
   autoDecode,
   b64uToBytes,
   b64ToBytes,
@@ -26,6 +32,7 @@ const TYPES = {
   CLIENT_DATA_JSON: 'clientDataJSON',
   ATTESTATION_OBJECT: 'attestationObject',
   AUTH_DATA: 'authenticatorData',
+  CREDENTIAL: 'credential',
 };
 
 // Looks at the raw bytes and decides which WebAuthn structure they most
@@ -75,9 +82,24 @@ export function parse(input) {
   if (input instanceof Uint8Array) {
     bytes = input;
     encoding = 'bytes';
+  } else if (input && typeof input === 'object') {
+    // A pre-parsed serialized credential object.
+    if (isCredentialJSON(input)) {
+      return { type: TYPES.CREDENTIAL, parsed: parseCredential(input), inputEncoding: 'object', byteLength: 0 };
+    }
+    throw new TypeError('parse expects a string, Uint8Array, or serialized credential object');
   } else if (typeof input === 'string') {
     const trimmed = input.trim();
     if (trimmed.startsWith('{')) {
+      // Could be a bare clientDataJSON or a full serialized credential.
+      try {
+        const obj = JSON.parse(trimmed);
+        if (isCredentialJSON(obj)) {
+          return { type: TYPES.CREDENTIAL, parsed: parseCredential(obj), inputEncoding: 'json', byteLength: trimmed.length };
+        }
+      } catch {
+        /* not JSON we recognize; fall through to byte handling */
+      }
       bytes = new TextEncoder().encode(trimmed);
       encoding = 'utf-8';
     } else {

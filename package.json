@@ -1,6 +1,6 @@
 {
   "name": "passkey-inspect",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Zero-dependency CLI and library to decode and pretty-print WebAuthn / passkey payloads (attestationObject, authenticatorData, clientDataJSON, COSE keys).",
   "keywords": [
     "webauthn",

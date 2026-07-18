@@ -100,6 +100,14 @@ curl -s ...  | jq -r '.response.clientDataJSON' | passkey-inspect --type=client
 passkey-inspect --json --no-color attestation.b64 | jq '.parsed.authData.flags'
 ```
 
+**Decode a whole credential** — paste the entire object your frontend sends to the server (as produced by `PublicKeyCredential.toJSON()` or `@github/webauthn-json`) and every embedded field is decoded at once:
+
+```sh
+passkey-inspect registration-response.json
+```
+
+`passkey-inspect` detects whether it is a registration (attestation) or authentication (assertion) response, decodes the `clientDataJSON` and the `attestationObject` / `authenticatorData` together, and surfaces the `signature` and `userHandle`. No more copying three fields out of one payload.
+
 ## Library usage
 
 ```js
@@ -119,20 +127,24 @@ All parsers accept `Uint8Array` and return plain JS objects. CBOR maps round-tri
 
 | Export | Description |
 |--------|-------------|
-| `parse(input)` | Auto-detect from `string` or `Uint8Array`. Returns `{ type, parsed, inputEncoding, byteLength }`. |
+| `parse(input)` | Auto-detect from a `string`, `Uint8Array`, or serialized credential object. Returns `{ type, parsed, inputEncoding, byteLength }`. |
 | `detectAndParse(bytes)` | Auto-detect from `Uint8Array`. |
+| `parseCredential(input)` | Decode a whole serialized `PublicKeyCredential` (object or JSON string). Returns the ceremony type and every decoded part. |
+| `isCredentialJSON(obj)` | Test whether an object looks like a serialized credential response. |
 | `parseAttestationObject(bytes)` | Decode a CBOR `attestationObject`. |
 | `parseAuthData(bytes)` | Decode `authenticatorData`. |
 | `parseClientDataJSON(bytes)` | Decode `clientDataJSON` with spec-compliance warnings. |
 | `parseCoseKey(map)` | Decode a COSE_Key CBOR map. |
 | `parseFlags(byte)` | Decode the authenticator-data flags byte. |
+| `lookupAaguid(uuid)` / `AAGUID_NAMES` | Resolve a known AAGUID to an authenticator model name. |
 | `b64uToBytes`, `b64ToBytes`, `hexToBytes`, `bytesToB64u`, `bytesToHex`, `autoDecode` | Encoding helpers. |
 | `TYPES` | `{ CLIENT_DATA_JSON, ATTESTATION_OBJECT, AUTH_DATA }`. |
 
 ## What it parses
 
 - **`attestationObject`** — CBOR map with `fmt`, `attStmt`, `authData`. Surfaces the format (`none`, `packed`, `tpm`, `android-key`, `android-safetynet`, `fido-u2f`, `apple`, `apple-appattest`) and warns on unknown formats or spec violations (e.g. non-empty `attStmt` with `fmt=none`).
-- **`authenticatorData`** — RP ID hash, flags byte (UP, UV, BE, BS, AT, ED), signature counter, attested credential data (AAGUID, credential ID, COSE public key), and extension data.
+- **`authenticatorData`** — RP ID hash, flags byte (UP, UV, BE, BS, AT, ED), signature counter, attested credential data (AAGUID, credential ID, COSE public key), and extension data. Known AAGUIDs are resolved to a model name (Google Password Manager, iCloud Keychain, YubiKey, Windows Hello, and more).
+- **serialized credentials** — the full JSON object from `navigator.credentials.create()` / `.get()`. `passkey-inspect` decodes the `clientDataJSON` and `attestationObject` / `authenticatorData` in one pass and reports the ceremony type, signature, and user handle.
 - **`clientDataJSON`** — `type`, `challenge`, `origin`, `crossOrigin`, `topOrigin`, with warnings when fields are missing, wrongly encoded, or have an unexpected `type`.
 - **COSE keys** — EC2 (P-256/P-384/P-521), OKP (Ed25519/Ed448/X25519/X448), RSA. Recognises ES256/ES384/ES512, EdDSA, PS256/384/512, RS256/384/512.
 
@@ -141,6 +153,15 @@ All parsers accept `Uint8Array` and return plain JS objects. CBOR maps round-tri
 `passkey-inspect` is a parser, not a validator. It does not verify signatures, attestation chains, or that the AAGUID matches a metadata service entry. Use it as a debugging tool, not as a substitute for relying-party verification logic. See [Backend Verification & Secure Credential Storage](https://www.passkeywebauthn.com/backend-verification-secure-credential-storage/) for what real verification needs to do.
 
 All decoding happens in-process; no network requests are ever made.
+
+## Related tools
+
+`passkey-inspect` is part of a small set of open-source WebAuthn tools:
+
+- [webauthn-ceremony-inspector](https://github.com/passkeywebauthn/webauthn-ceremony-inspector) — a browser DevTools panel that captures and decodes live ceremonies (it reuses this project's decoder).
+- [passkey-fixture-generator](https://github.com/passkeywebauthn/passkey-fixture-generator) — deterministic, valid registration/authentication fixtures for testing your backend verification.
+- [rp-id-doctor](https://github.com/passkeywebauthn/rp-id-doctor) — validate your `rpId`, origins, and `.well-known/webauthn` configuration in CI.
+- [authenticator-support-matrix](https://github.com/passkeywebauthn/authenticator-support-matrix) — a filterable feature matrix of platform and roaming authenticators.
 
 ## Development
 
